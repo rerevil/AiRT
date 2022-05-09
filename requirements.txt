@@ -1,0 +1,10 @@
+bs4
+requests~=2.27.1
+beautifulsoup4~=4.11.1
+pillow~=9.1.0
+fastapi[all]~=0.76.0
+aiohttp~=3.8.1
+starlette~=0.18.0
+keras~=2.8.0
+numpy~=1.22.3
+tensorflow~=2.8.0
