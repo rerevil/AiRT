@@ -7,7 +7,7 @@ import requests
 from PIL import Image
 from bs4 import BeautifulSoup
 
-from utils.constants import IMAGE_SIZE
+from constants import IMAGE_SIZE
 
 
 async def get_100_images_of(search: str, as_array=False, normalize=False) -> Image:

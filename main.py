@@ -3,11 +3,11 @@ import os
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 
-from utils.constants import IMAGES_PATH
+from constants import IMAGES_PATH
 
 app = FastAPI()
 os.makedirs(IMAGES_PATH, exist_ok=True)
-app.mount('/wittmann', StaticFiles(directory=IMAGES_PATH), name='wittmann')
+app.mount('/images', StaticFiles(directory=IMAGES_PATH), name='images')
 
 
 @app.get("/")
