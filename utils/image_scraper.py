@@ -4,17 +4,23 @@ from io import BytesIO
 import aiohttp
 import numpy as np
 import requests
-from PIL import Image
+from PIL import Image, ImageOps
 from bs4 import BeautifulSoup
 
 from constants import IMAGE_SIZE
 
 
-async def get_100_images_of(search: str, as_array=False, normalize=False) -> Image:
-    req = requests.get(f"https://www.freeimages.com/it/search/{search}")
-    html_imgs = BeautifulSoup(req.content, features='html.parser').find_all('img')
+async def get_100_images_of(search: str, as_array=False, normalize=False, pages=0) -> Image:
+    images_links = []
+    for index in range(pages):
+        if index == 0:
+            req = requests.get(f"https://www.freeimages.com/it/search/{search}")
+        else:
+            req = requests.get(f"https://www.freeimages.com/it/search/{search}/{index}")
+            
+        html_imgs = BeautifulSoup(req.content, features='html.parser').find_all('img')
 
-    images_links = [img['src'] for img in html_imgs if img['src'].startswith('https')]
+        images_links += [img['src'] for img in html_imgs if img['src'].startswith('https')]
     images = []
     async with aiohttp.ClientSession() as session:
         for image_link in images_links:
@@ -22,15 +28,10 @@ async def get_100_images_of(search: str, as_array=False, normalize=False) -> Ima
                 content = await img_req.content.read()
                 image = Image.open(BytesIO(content))
                 image = expand2square(image, 0).resize(IMAGE_SIZE)
+                image = ImageOps.grayscale(image)
                 if as_array:
-                    image = np.array(image)/255
-                    if len(image.shape) < 3:
-                        new_image = np.zeros((*IMAGE_SIZE, 3))
-                        new_image[:, :, 0] = image
-                        new_image[:, :, 1] = image
-                        new_image[:, :, 2] = image
-                        # return Image.fromarray(image)
-                        image = new_image
+                    image = np.array(image)
+                    image = np.expand_dims(image, axis=2)
                 images.append(image)
     if as_array:
         return np.concatenate([np.expand_dims(image, axis=0) for image in images], axis=0)
@@ -53,7 +54,9 @@ def expand2square(pil_img, background_color):
 
 
 async def main():
-    images = await get_100_images_of('cat', as_array=True)
+    
+    images = await get_100_images_of('cat', as_array=True, pages=10)
+    # asyncio.gather(*tasks)
     print(images.shape)
     # a = Image.fromarray(images[0].astype(np.uint8))
     # a.show()

@@ -3,7 +3,7 @@ import os
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 
-from constants import IMAGES_PATH
+from utils.constants import IMAGES_PATH
 
 app = FastAPI()
 os.makedirs(IMAGES_PATH, exist_ok=True)

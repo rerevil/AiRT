@@ -1,3 +1,5 @@
 import tensorflow as tf
 
-print(tf.__version__)
+(train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data()
+
+print(train_images.shape)

@@ -4,14 +4,16 @@ import tensorflow as tf
 from matplotlib import pyplot as plt
 from tensorflow.keras import Sequential
 
-from constants import BATCH, CHECKPOINT_DIR
-from utils.image_scraper import get_100_images_of
+from constants import BATCH, CHECKPOINT_DIR, EPOCHS
+from image_scraper import get_100_images_of
 import os
 from tensorflow.keras import layers
 import time
 
 from IPython import display
 
+from tensorflow.python.ops.numpy_ops import np_config
+np_config.enable_numpy_behavior()
 
 def make_generator_model():
     model = Sequential()
@@ -32,8 +34,8 @@ def make_generator_model():
     model.add(layers.BatchNormalization())
     model.add(layers.LeakyReLU())
 
-    model.add(layers.Conv2DTranspose(3, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='relu'))
-    assert model.output_shape == (None, 300, 300, 3)
+    model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='relu'))
+    assert model.output_shape == (None, 300, 300, 1)
 
     return model
 
@@ -41,7 +43,7 @@ def make_generator_model():
 def make_discriminator_model():
     model = tf.keras.Sequential()
     model.add(layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same',
-                            input_shape=[300, 300, 3]))
+                            input_shape=[300, 300, 1]))
     model.add(layers.LeakyReLU())
     model.add(layers.Dropout(0.3))
 
@@ -55,7 +57,6 @@ def make_discriminator_model():
     return model
 
 
-cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 
 def discriminator_loss(real_output, fake_output):
@@ -69,9 +70,12 @@ def generator_loss(fake_output):
     return cross_entropy(tf.ones_like(fake_output), fake_output)
 
 
+generator = make_generator_model()
+discriminator = make_discriminator_model()
 generator_optimizer = tf.keras.optimizers.Adam(1e-4)
 discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
 
+cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 def generate_and_save_images(model, epoch, test_input):
     # Notice `training` is set to False.
@@ -85,21 +89,20 @@ def generate_and_save_images(model, epoch, test_input):
         plt.imshow(predictions[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
         plt.axis('off')
 
-    plt.savefig('image_at_epoch_{:04d}.png'.format(epoch))
-    plt.show()
+    plt.savefig(os.path.join(CHECKPOINT_DIR, 'image_at_epoch_{:04d}.png'.format(epoch)))
+    # plt.show()
+    plt.close(fig)
 
 
-async def checkpoint_model(discriminator, generator):
+async def checkpoint_model():
     checkpoint_prefix = os.path.join(CHECKPOINT_DIR, "ckpt")
     checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
-                                     discriminator_optimizer=discriminator_optimizer,
-                                     generator=generator,
-                                     discriminator=discriminator)
+                                     discriminator_optimizer=discriminator_optimizer)
     return checkpoint, checkpoint_prefix
 
 
 @tf.function
-def train_step(images, generator, discriminator, noise_dim):
+def train_step(images, noise_dim):
     noise = tf.random.normal([BATCH, noise_dim])
 
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
@@ -118,12 +121,12 @@ def train_step(images, generator, discriminator, noise_dim):
     discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, discriminator.trainable_variables))
 
 
-def train(dataset, epochs, generator, discriminator, noise_dim, checkpoint, checkpoint_prefix, seed):
+def train(dataset, epochs, noise_dim, checkpoint, checkpoint_prefix, seed):
     for epoch in range(epochs):
         start = time.time()
 
         for image_batch in dataset:
-            train_step(image_batch, generator, discriminator, noise_dim)
+            train_step(image_batch, noise_dim)
 
         # Produce images for the GIF as you go
         display.clear_output(wait=True)
@@ -151,26 +154,22 @@ async def main():
     train_images = (train_images - 127.5) / 127.5  # Normalize the images to [-1, 1]
 
     train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(1).batch(BATCH)
-    generator = make_generator_model()
-    discriminator = make_discriminator_model()
 
-    EPOCHS = 5
     noise_dim = 100
     num_examples_to_generate = 16
 
     # You will reuse this seed overtime (so it's easier)
     # to visualize progress in the animated GIF)
     seed = tf.random.normal([num_examples_to_generate, noise_dim])
-    checkpoint, checkpoint_prefix = await checkpoint_model(discriminator, generator)
+    checkpoint, checkpoint_prefix = await checkpoint_model()
     train(dataset=train_dataset,
           epochs=EPOCHS,
-          generator=generator,
-          discriminator=discriminator,
           noise_dim=noise_dim,
           checkpoint=checkpoint,
           checkpoint_prefix=checkpoint_prefix,
           seed=seed)
-
+    generator.save("generator_model1.h5")
+    
 
 if __name__ == '__main__':
     asyncio.run(main())
