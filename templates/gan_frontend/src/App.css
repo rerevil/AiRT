@@ -1,0 +1,13 @@
+header {
+  background: "#400CCC";
+  display: flex;
+  justify-content: space-between;
+
+}
+
+
+.toolbar {
+  
+  display: "flex";
+  justify-content: "space-between";
+}
