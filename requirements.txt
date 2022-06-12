@@ -10,3 +10,5 @@ numpy~=1.22.3
 tensorflow~=2.8.0
 matplotlib
 IPython
+aiohttp
+sqlalchemy
