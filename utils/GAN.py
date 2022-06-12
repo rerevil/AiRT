@@ -1,41 +1,44 @@
 import asyncio
-
+import sys
 import tensorflow as tf
 from matplotlib import pyplot as plt
-from tensorflow.keras import Sequential
 
-from constants import BATCH, CHECKPOINT_DIR, EPOCHS
+from constants import BATCH, CHECKPOINT_DIR, EPOCHS, MODELS_PATH
 from image_scraper import get_100_images_of
 import os
 from tensorflow.keras import layers
 import time
-
+import secrets
 from IPython import display
 
-from tensorflow.python.ops.numpy_ops import np_config
-np_config.enable_numpy_behavior()
+if len(sys.argv) <= 1:
+    raise Exception('Choose a prompt, Example: python GAN.py cat')
+
+prompt = sys.argv[1]
+prompt_path = os.path.join(CHECKPOINT_DIR, prompt)
+
 
 def make_generator_model():
-    model = Sequential()
-    model.add(layers.Dense(75 * 75 * 64, use_bias=False, input_shape=(100,)))
+    model = tf.keras.Sequential()
+    model.add(layers.Dense(7 * 7 * 256, use_bias=False, input_shape=(100,)))
     model.add(layers.BatchNormalization())
     model.add(layers.LeakyReLU())
 
-    model.add(layers.Reshape((75, 75, 64)))
-    assert model.output_shape == (None, 75, 75, 64)  # Note: None is the batch size
+    model.add(layers.Reshape((7, 7, 256)))
+    assert model.output_shape == (None, 7, 7, 256)
 
-    model.add(layers.Conv2DTranspose(32, (5, 5), strides=(1, 1), padding='same', use_bias=False))
-    assert model.output_shape == (None, 75, 75, 32)
+    model.add(layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same', use_bias=False))
+    assert model.output_shape == (None, 7, 7, 128)
     model.add(layers.BatchNormalization())
     model.add(layers.LeakyReLU())
 
-    model.add(layers.Conv2DTranspose(16, (5, 5), strides=(2, 2), padding='same', use_bias=False))
-    assert model.output_shape == (None, 150, 150, 16)
+    model.add(layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same', use_bias=False))
+    assert model.output_shape == (None, 14, 14, 64)
     model.add(layers.BatchNormalization())
     model.add(layers.LeakyReLU())
 
-    model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='relu'))
-    assert model.output_shape == (None, 300, 300, 1)
+    model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
+    assert model.output_shape == (None, 28, 28, 1)
 
     return model
 
@@ -43,7 +46,7 @@ def make_generator_model():
 def make_discriminator_model():
     model = tf.keras.Sequential()
     model.add(layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same',
-                            input_shape=[300, 300, 1]))
+                            input_shape=[28, 28, 1]))
     model.add(layers.LeakyReLU())
     model.add(layers.Dropout(0.3))
 
@@ -57,8 +60,6 @@ def make_discriminator_model():
     return model
 
 
-
-
 def discriminator_loss(real_output, fake_output):
     real_loss = cross_entropy(tf.ones_like(real_output), real_output)
     fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
@@ -70,12 +71,12 @@ def generator_loss(fake_output):
     return cross_entropy(tf.ones_like(fake_output), fake_output)
 
 
+cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 generator = make_generator_model()
 discriminator = make_discriminator_model()
 generator_optimizer = tf.keras.optimizers.Adam(1e-4)
 discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
 
-cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 def generate_and_save_images(model, epoch, test_input):
     # Notice `training` is set to False.
@@ -89,15 +90,15 @@ def generate_and_save_images(model, epoch, test_input):
         plt.imshow(predictions[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
         plt.axis('off')
 
-    plt.savefig(os.path.join(CHECKPOINT_DIR, 'image_at_epoch_{:04d}.png'.format(epoch)))
-    # plt.show()
-    plt.close(fig)
+    plt.savefig(os.path.join(prompt_path, 'image_at_epoch_{:04d}.png'.format(epoch)))
 
 
 async def checkpoint_model():
     checkpoint_prefix = os.path.join(CHECKPOINT_DIR, "ckpt")
     checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
-                                     discriminator_optimizer=discriminator_optimizer)
+                                     discriminator_optimizer=discriminator_optimizer,
+                                     generator=generator,
+                                     discriminator=discriminator)
     return checkpoint, checkpoint_prefix
 
 
@@ -148,12 +149,28 @@ def train(dataset, epochs, noise_dim, checkpoint, checkpoint_prefix, seed):
 
 
 async def main():
-    train_images = await get_100_images_of('cat', as_array=True)
-    # train_images = train_images.reshape(train_images.shape[0], 300, 300, 1).astype('float32')
-    print(train_images.shape)
-    train_images = (train_images - 127.5) / 127.5  # Normalize the images to [-1, 1]
+    print('''
+#####################################################
+#####################################################
+####        _____  ._______________________      ####
+####       /  _  \ |__\______   \__    ___/      ####
+####      /  /_\  \|  ||       _/ |    |         ####
+####     /    |    \  ||    |   \ |    |         ####
+####     \____|__  /__||____|_  / |____|         ####
+####             \/           \/                 ####
+#####################################################
+#####################################################
+''')
+    if os.path.exists(prompt_path):
+        if input('Prompt already done, want to overwrite the previous epochs\' images? ').lower() != 'y':
+            exit()
+    else:
+        os.makedirs(prompt_path)
 
-    train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(1).batch(BATCH)
+    train_images = await get_100_images_of(prompt, as_array=True)
+    train_images = (train_images - 127.5) / 127.5  # Normalize the images to [-1, 1]
+    print(train_images.shape)
+    train_dataset = tf.data.Dataset.from_tensor_slices(train_images).batch(BATCH)
 
     noise_dim = 100
     num_examples_to_generate = 16
@@ -168,8 +185,9 @@ async def main():
           checkpoint=checkpoint,
           checkpoint_prefix=checkpoint_prefix,
           seed=seed)
-    generator.save("generator_model1.h5")
     
+    generator.save(os.path.join(MODELS_PATH, f'{prompt}_{secrets.token_urlsafe(10)}.h5'))
+
 
 if __name__ == '__main__':
     asyncio.run(main())
