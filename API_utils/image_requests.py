@@ -9,32 +9,32 @@ from db_management.models import Request, User, Model, Image
 from utils.image_generator import generate_image
 
 
-async def send_request(db: Session, *, word: str, user: User, model: Optional[Model]) -> Optional[Image]:
-    if model:
-        new_image = await create_image(db, model, user)
+async def send_request(db: Session, *,  user: User, model: Model) -> str:
+    new_image = await create_image(db, model, user)
 
-        new_req = Request(
-            word=model.word,
-            user_id=user.id,
-            model_id=model.id,
-            image_id=new_image.id,
-            date_end=datetime.now()
-        )
-        db.add(new_req)
-        db.commit()
-        return new_image
+    new_req = Request(
+        word=model.word,
+        user_id=user.id,
+        model_id=model.id,
+        image_id=new_image.id,
+        date_end=datetime.now()
+    )
+    db.add(new_req)
+    db.commit()
+    return new_image.path
 
-    else:
-        new_req = Request(
-            word=word,
-            user_id=user.id,
-        )
-        db.add(new_req)
-        db.commit()
-        db.refresh(new_req)
 
-        asyncio.ensure_future(training_gen(word, user.username, new_req.id))
+async def train_new_model(db: Session, word, user, background_tasks):
 
+    new_req = Request(
+        word=word,
+        user_id=user.id,
+    )
+    db.add(new_req)
+    db.commit()
+    db.refresh(new_req)
+
+    background_tasks.add_task(training_gen, word, user.id, new_req.id)
 
 async def training_gen(word, user_id, request_id):
     from utils.GAN import train_generator

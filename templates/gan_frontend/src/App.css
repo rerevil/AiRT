@@ -1,13 +1,16 @@
-header {
-  background: "#400CCC";
-  display: flex;
-  justify-content: space-between;
-
+html {
+  
+  overflow: hidden;
 }
-
 
 .toolbar {
   
   display: "flex";
   justify-content: "space-between";
+}
+*{
+  -ms-overflow-style: none;
+}
+::-webkit-scrollbar {
+  display: none;
 }

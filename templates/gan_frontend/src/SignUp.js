@@ -24,6 +24,20 @@ export default function SignUp() {
       email: data.get('email'),
       password: data.get('password'),
     });
+    const fdata = new FormData();
+    fdata.append('username', data.get('username'));
+    fdata.append('email', data.get('email'));
+    fdata.append('password', data.get('password'));
+
+    const options = {
+      method: "POST",
+      body: fdata
+    };
+    fetch('http://127.0.0.1:5000/register', options)
+    .then((response) => response.json()).then((data) => {
+      console.log(data)
+    })
+
   };
 
   return (

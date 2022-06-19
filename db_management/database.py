@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database
 
-engine = create_engine("postgresql://possgress@password@localhost/gan_db",
+engine = create_engine("postgresql://postgres:gan10021@localhost/gan_db",
                        pool_pre_ping=True,
                        echo=True)
 

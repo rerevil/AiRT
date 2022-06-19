@@ -1,5 +1,2 @@
-import tensorflow as tf
-
-(train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data()
-
-print(train_images.shape)
+from tensorflow.python.client import device_lib 
+print(device_lib.list_local_devices())

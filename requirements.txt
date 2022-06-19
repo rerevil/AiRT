@@ -12,3 +12,5 @@ matplotlib
 IPython
 aiohttp
 sqlalchemy
+tensorflow_hub
+pydantic

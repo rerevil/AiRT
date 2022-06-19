@@ -8,14 +8,14 @@ import {
 import Header from "./header.js"
 import SignIn from "./SignIn.js"
 import SignUp from "./SignUp.js"
-import { TextField  } from "@mui/material"
+import Home from './Home.js';
 
 
 
 export default function BasicExample() {
   return (
     <Router>
-      <div>
+      <div id="body">
       <Header/>
 
         <hr />
@@ -37,7 +37,9 @@ export default function BasicExample() {
           <Route path="/signup" element={<SignUp />}>
           </Route>
         </Routes>
+        
       </div>
+      
     </Router>
   );
 }
@@ -45,13 +47,6 @@ export default function BasicExample() {
 // You can think of these components as "pages"
 // in your app.
 
-function Home() {
-  return (
-    <div>
-      <h2>Home</h2>
-    </div>
-  );
-}
 
 function About() {
   return (

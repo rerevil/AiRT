@@ -17,7 +17,7 @@ IMAGE_SIZE = (28, 28)
 SAMPLE_LEN = 100
 
 # GAN
-EPOCHS = 2
+EPOCHS = 500
 BATCH = 10
 
 if __name__ == '__main__':

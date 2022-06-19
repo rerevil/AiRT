@@ -1,21 +1,18 @@
 import asyncio
 import sys
+import os
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
-from constants import BATCH, CHECKPOINT_DIR, EPOCHS, MODELS_PATH
-from image_scraper import get_100_images_of
+from utils.constants import BATCH, CHECKPOINT_DIR, EPOCHS, MODELS_PATH
+from utils.image_scraper import get_100_images_of
 import os
 from tensorflow.keras import layers
 import time
 import secrets
 from IPython import display
+from fastapi.concurrency import run_in_threadpool
 
-if len(sys.argv) <= 1:
-    raise Exception('Choose a prompt, Example: python GAN.py cat')
-
-prompt = sys.argv[1]
-prompt_path = os.path.join(CHECKPOINT_DIR, prompt)
 
 
 def make_generator_model():
@@ -36,6 +33,12 @@ def make_generator_model():
     assert model.output_shape == (None, 14, 14, 64)
     model.add(layers.BatchNormalization())
     model.add(layers.LeakyReLU())
+    
+    
+    # model.add(layers.Conv2DTranspose(32, (5, 5), strides=(2, 2), padding='same', use_bias=False))
+    # assert model.output_shape == (None, 28, 28, 1)
+    # model.add(layers.BatchNormalization())
+    # model.add(layers.LeakyReLU())
 
     model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
     assert model.output_shape == (None, 28, 28, 1)
@@ -91,6 +94,7 @@ def generate_and_save_images(model, epoch, test_input):
         plt.axis('off')
 
     plt.savefig(os.path.join(prompt_path, 'image_at_epoch_{:04d}.png'.format(epoch)))
+    plt.close()
 
 
 async def checkpoint_model():
@@ -147,8 +151,38 @@ def train(dataset, epochs, noise_dim, checkpoint, checkpoint_prefix, seed):
                              epochs,
                              seed)
 
+async def train_generator(user_prompt):
+
+    global prompt_path
+    prompt_path = user_prompt
+    train_images = await get_100_images_of(user_prompt, as_array=True)
+    train_images = (train_images - 127.5) / 127.5 # Normalize the images to [-1, 1]
+    print(train_images.shape)
+    os.makedirs(prompt_path, exist_ok=True)
+    train_dataset = tf.data.Dataset.from_tensor_slices(train_images).batch(BATCH)
+    noise_dim = 100
+    num_examples_to_generate = 16
+    # You will reuse this seed overtime (so it's easier)
+    # to visualize progress in the animated GIF)
+    seed = tf.random.normal([num_examples_to_generate, noise_dim])
+    checkpoint, checkpoint_prefix = await checkpoint_model()
+    train(dataset=train_dataset,
+        epochs=EPOCHS,
+        noise_dim=noise_dim,
+        checkpoint=checkpoint,
+        checkpoint_prefix=checkpoint_prefix,
+        seed=seed)
+    models_path = os.path.join(MODELS_PATH, f'{user_prompt}_{secrets.token_urlsafe(10)}.h5')
+    generator.save(models_path)
+    return models_path
 
 async def main():
+    
+    if len(sys.argv) <= 1:
+        raise Exception('Choose a prompt, Example: python GAN.py cat')
+    global prompt
+    prompt = sys.argv[1]
+    prompt_path = os.path.join(CHECKPOINT_DIR, prompt)
     print('''
 #####################################################
 #####################################################
@@ -179,15 +213,18 @@ async def main():
     # to visualize progress in the animated GIF)
     seed = tf.random.normal([num_examples_to_generate, noise_dim])
     checkpoint, checkpoint_prefix = await checkpoint_model()
-    train(dataset=train_dataset,
+    await run_in_threadpool(lambda: checkpoint.train(dataset=train_dataset,
           epochs=EPOCHS,
           noise_dim=noise_dim,
           checkpoint=checkpoint,
           checkpoint_prefix=checkpoint_prefix,
-          seed=seed)
+          seed=seed))
     
     generator.save(os.path.join(MODELS_PATH, f'{prompt}_{secrets.token_urlsafe(10)}.h5'))
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except:
+        generator.save(os.path.join(MODELS_PATH, f'{prompt}_{secrets.token_urlsafe(10)}_unfinished.h5'))

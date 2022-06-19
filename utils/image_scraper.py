@@ -13,7 +13,7 @@ from constants import IMAGE_SIZE
 
 async def get_100_images_of(search: str, as_array=False, min_pages=5) -> Image:
 
-    url = f"https://www.freeimages.com/it/search/{search}"
+    url = f"https://www.freeimages.com/search/{search}"
 
     # Get max pages from the site
     req = requests.get(url)

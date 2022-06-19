@@ -12,19 +12,35 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { useEffect, useState } from "react";
 
 
 const theme = createTheme();
 
 export default function SignIn() {
+  const [text, setText] = useState('');
+
+
   const handleSubmit = (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     console.log({
-      email: data.get('email'),
+      username: data.get('username'),
       password: data.get('password'),
     });
-  };
+    const fdata = new FormData();
+    fdata.append('username', data.get('username'));
+    fdata.append('password', data.get('password'));
+
+    const options = {
+      method: "POST",
+      body: fdata
+    };
+    fetch('http://127.0.0.1:5000/login', options)
+    .then((response) => response.json()).then((data) => {
+      localStorage.setItem('auth', data.token_type + ' ' + data.access_token);
+    })
+}
 
   return (
     <ThemeProvider theme={theme}>
@@ -49,10 +65,9 @@ export default function SignIn() {
               margin="normal"
               required
               fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
+              id="username"
+              label="Username"
+              name="username"
               autoFocus
             />
             <TextField

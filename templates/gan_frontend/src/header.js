@@ -1,8 +1,9 @@
-
 import {
-    Link
+    Link,
+    useNavigate 
   } from "react-router-dom";
 import { TextField, Toolbar, AppBar, Button } from "@mui/material"
+import svg_logo from './logo.svg';
 
 const headersData = [
     {
@@ -38,17 +39,22 @@ const getMenuButtons = () => {
   };
 
 export default function Header() {
-const logo_ = 'temp logo'
-
-const displayDesktop = () => {
-    return <Toolbar className={"toolbar"}>
-            <div style={{ flex: 1 }}>{logo_}</div>
-            <div>{getMenuButtons()}</div>
-</Toolbar>;
-};
-return (
-    <header>
-    <AppBar  className={"header"}>{displayDesktop()}</AppBar>
-    </header>
-);
+    
+  const navigate = useNavigate();
+  const displayDesktop = () => {
+      return <Toolbar className={"toolbar"}>
+              
+              <div style={{ flex: 1 }}>
+              <Button onClick={() => navigate('/')}>
+              <img src={svg_logo} className="App-logo" alt="logo" height="60"/>
+              </Button>
+              </div>
+              <div>{getMenuButtons()}</div>
+  </Toolbar>;
+  };
+  return (
+      <header>
+      <AppBar  className={"header"}>{displayDesktop()}</AppBar>
+      </header>
+  );
 }
