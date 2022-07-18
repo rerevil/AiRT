@@ -13,12 +13,15 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useEffect, useState } from "react";
+import Header from "./header.js"
+import { useNavigate } from 'react-router-dom';
 
 
 const theme = createTheme();
 
 export default function SignIn() {
   const [text, setText] = useState('');
+  const navigate = useNavigate()
 
 
   const handleSubmit = (event) => {
@@ -37,12 +40,20 @@ export default function SignIn() {
       body: fdata
     };
     fetch('http://127.0.0.1:5000/login', options)
-    .then((response) => response.json()).then((data) => {
+    .then((response) => {
+      if (response.ok)
+        return response.json()
+      else
+        throw new Error("error")
+    }).then((data) => {
       localStorage.setItem('auth', data.token_type + ' ' + data.access_token);
-    })
+      navigate('/')
+    }).catch((error) => {alert(error)})
 }
 
-  return (
+  return (<>
+  
+  <Header/>
     <ThemeProvider theme={theme}>
       <Container component="main" maxWidth="xs">
         <CssBaseline />
@@ -108,5 +119,6 @@ export default function SignIn() {
         </Box>
       </Container>
     </ThemeProvider>
+    </>
   );
 }

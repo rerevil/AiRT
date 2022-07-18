@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 os.environ["TFHUB_DOWNLOAD_PROGRESS"] = "True"
 
 
-IMAGE_PATH = "../images/default_mountain_iXwvwlY0hDSiig.png"
+IMAGE_PATH = "../images/default_mountain_PLNBmnZU3RYk4g.png"
 SAVED_MODEL_PATH = "https://tfhub.dev/captain-pool/esrgan-tf2/1"
 
 def preprocess_image(image_path):
@@ -36,7 +36,7 @@ def save_image(image, filename):
   if not isinstance(image, Image.Image):
     image = tf.clip_by_value(image, 0, 255)
     image = Image.fromarray(tf.cast(image, tf.uint8).numpy())
-  image.save("%s.jpg" % filename)
+  image.save("%s.png" % filename)
   print("Saved as %s.jpg" % filename)
 
 def plot_image(image, title=""):

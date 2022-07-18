@@ -67,4 +67,4 @@ def generate_image(model_name, username):
 
 
 if __name__ == '__main__':
- print(generate_image('bird_5JZ73eWHNZ7d9w.h5', 'dude'))
+ print(generate_image('sea_8fJaUWDgRbG7uw.h5', 'dude'))

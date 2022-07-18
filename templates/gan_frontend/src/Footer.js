@@ -7,6 +7,14 @@ import svg_logo from './logo.svg';
 
 const headersData = [
     {
+      label: "About me",
+      href: "/me",
+    },
+    {
+      label: "About the project",
+      href: "/project",
+    },
+    {
       label: "Terms of service",
       href: "/",
     },

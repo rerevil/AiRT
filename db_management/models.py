@@ -14,6 +14,7 @@ class User(Base):
     username = Column(String, unique=True)
     password = Column(String)
     email = Column(String)
+    daily_images = Column(Integer, default=5)
     subscription = Column(Enum(Subscription), default=Subscription.base)
     subscription_end = Column(DateTime, nullable=True)
 

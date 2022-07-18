@@ -5,10 +5,11 @@ import {
   Route,
   Link
 } from "react-router-dom";
-import Header from "./header.js"
 import SignIn from "./SignIn.js"
 import SignUp from "./SignUp.js"
 import Home from './Home.js';
+import Me from './Me.js';
+import Project from './Project.js';
 
 
 
@@ -16,17 +17,9 @@ export default function BasicExample() {
   return (
     <Router>
       <div id="body">
-      <Header/>
 
         <hr />
 
-        {/*
-          A <Routes> looks through all its children <Route>
-          elements and renders the first one whose path
-          matches the current URL. Use a <Routes> any time
-          you have multiple routes, but you want only one
-          of them to render at a time
-        */}
         <Routes>
           <Route exact path="/" element={<Home />}>
           </Route>
@@ -35,6 +28,10 @@ export default function BasicExample() {
           <Route path="/login" element={<SignIn />}>
           </Route>
           <Route path="/signup" element={<SignUp />}>
+          </Route>
+          <Route path="/me" element={<Me />}>
+          </Route>
+          <Route path="/project" element={<Project />}>
           </Route>
         </Routes>
         

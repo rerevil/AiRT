@@ -5,6 +5,7 @@ import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import mail_img from './mail.png'
 import Footer from './Footer.js';
+import Header from "./header.js"
 
 const imageUrl = "http://127.0.0.1:5000/generate_image";
 
@@ -68,8 +69,9 @@ export default function Home() {
     }
 
     return (<>
-        <div style={{display: 'flex',  justifyContent:'center', alignItems:'center', height: '100vh'}}>
     
+    <Header/>
+        <div style={{display: 'flex',  justifyContent:'center', alignItems:'center', height: '100vh'}}>
             <Box
   container
   spacing={2}

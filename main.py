@@ -12,7 +12,8 @@ from starlette.staticfiles import StaticFiles
 from fastapi import BackgroundTasks
 from sqlalchemy import or_
 
-from API_utils.image_requests import send_request, training_gen
+from API_utils.image_requests import send_request
+from API_utils.pydantic_models import Registration
 from db_connection import depend_db, get_db
 from db_management.database import engine
 from db_management.models import Request, User, Model, Image, Base
@@ -51,15 +52,20 @@ async def startup_event():
         Base.metadata.create_all(bind=engine)
         db = get_db()
         default = User(
-            username='default',
-            password='password',
+            username='admin',
+            password='admin',
             email='r.villanueva@itsrizzoli.it',
             subscription=Subscription.premium,
         )
 
         cat_model = Model(
-            path='cat_xFsB_mppBTPNAQ.h5',
+            path='cat_pIKUElqx_XXiFw.h5',
             word='cat'
+        )
+
+        dog_model = Model(
+            path='f500dog.h5',
+            word='dog'
         )
 
         mountain_model = Model(
@@ -67,9 +73,22 @@ async def startup_event():
             word='mountain'
         )
 
+        face_model = Model(
+            path='10000face2.h5',
+            word='face'
+        )
+
+        bird_model = Model(
+            path='10000face2.h5',
+            word='bird'
+        )
+
         db.add(default)
         db.add(cat_model)
         db.add(mountain_model)
+        db.add(face_model)
+        db.add(dog_model)
+        db.add(bird_model)
         db.commit()
         db.close()
 
@@ -85,10 +104,10 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db=Depends(get
     print("-----------------------------------------------------------------------------------")
     print(user)
     if not user:
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect username or password")
     hashed_password = form_data.password
     if not hashed_password == user.password:
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect username or password")
 
     return {"access_token": user.username, "token_type": "bearer"}
 
@@ -115,25 +134,16 @@ async def request_image(search: str, background_tasks: BackgroundTasks, db=Depen
         return status.HTTP_201_CREATED
 
 
-@app.post("/test")
-async def test(db=Depends(depend_db)):
-    if not (model := db.query(Model).first()):
-        return
-
-    return model.requests
-
 @app.post("/register")
-async def register(username,
-                    password,
-                    email,
+async def register(regist_form: Registration,
                     db=Depends(depend_db)):
-    if db.query(User).filter(or_(User.username == username, User.email == email)).all():
+    if db.query(User).filter(or_(User.username == regist_form.username, User.email == regist_form.email)).all():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Email or username already in use')
     
     db.add(User(
-            username=username,
-            password=password,
-            email=email,
+            username=regist_form.username,
+            password=regist_form.password,
+            email=regist_form.email,
             subscription=Subscription.premium,
         ))
     db.commit()

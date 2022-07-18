@@ -12,11 +12,14 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import Header from "./header.js"
+import { useNavigate } from 'react-router-dom';
 
 
 const theme = createTheme();
 
 export default function SignUp() {
+  const navigate = useNavigate()
   const handleSubmit = (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -24,23 +27,34 @@ export default function SignUp() {
       email: data.get('email'),
       password: data.get('password'),
     });
-    const fdata = new FormData();
-    fdata.append('username', data.get('username'));
-    fdata.append('email', data.get('email'));
-    fdata.append('password', data.get('password'));
-
+    let object = {};
+    data.forEach((value, key) => object[key] = value);
+    let json = JSON.stringify(object);
     const options = {
       method: "POST",
-      body: fdata
-    };
-    fetch('http://127.0.0.1:5000/register', options)
-    .then((response) => response.json()).then((data) => {
-      console.log(data)
-    })
+      body: json,
+      headers: new Headers({
+          'Content-Type': 'application/json'
+      }), 
+    }
 
+    fetch('http://127.0.0.1:5000/register', options)
+    .then((response) => {
+      if (response.ok)
+        return response.json()
+      else
+        throw new Error("error")
+    })
+    .then((data) => {
+      console.log(data)
+      navigate("/login")
+    }).catch(err => window.alert('Username or Email already in use'))
   };
 
+
   return (
+    <>
+    <Header/>
     <ThemeProvider theme={theme}>
       <Container component="main" maxWidth="xs">
         <CssBaseline />
@@ -118,5 +132,6 @@ export default function SignUp() {
         </Box>
       </Container>
     </ThemeProvider>
+    </>
   );
 }

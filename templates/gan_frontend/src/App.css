@@ -1,5 +1,4 @@
-html {
-  
+html, div, body {
   overflow: hidden;
 }
 
@@ -13,4 +12,9 @@ html {
 }
 ::-webkit-scrollbar {
   display: none;
+}
+
+
+.UnderHeader {
+  padding-top: 100px;
 }
